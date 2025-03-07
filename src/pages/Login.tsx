@@ -40,7 +40,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-kings-black p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-kings-black to-kings-dark p-4">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -53,15 +53,15 @@ const Login = () => {
           animate={{ scale: 1 }}
           transition={{ duration: 0.5 }}
         >
-          <h1 className="text-kings-red text-4xl font-bold tracking-tight mb-2">KINGS BASE</h1>
-          <p className="text-gray-400">Trading Journal & Analytics</p>
+          <h1 className="text-kings-red text-4xl font-bold tracking-tight mb-2 drop-shadow-lg">KINGS BASE</h1>
+          <p className="text-gray-300">Trading Journal & Analytics</p>
         </motion.div>
         
         <motion.div
           variants={container}
           initial="hidden"
           animate="show"
-          className="glass-card rounded-xl p-8 shadow-2xl backdrop-blur-xl"
+          className="bg-kings-gray/90 backdrop-blur-xl rounded-xl p-8 shadow-2xl border border-white/10"
         >
           <motion.h2 variants={item} className="text-2xl font-semibold text-white mb-6">Sign In</motion.h2>
           
@@ -108,10 +108,10 @@ const Login = () => {
           </form>
           
           <motion.div variants={item} className="mt-6 text-center">
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-300 text-sm">
               Custom account creation by admin only
             </p>
-            <div className="text-gray-500 text-xs mt-3">
+            <div className="text-gray-400 text-xs mt-3">
               Test accounts: student/student (Student) | admin/admin (Admin)
             </div>
           </motion.div>
