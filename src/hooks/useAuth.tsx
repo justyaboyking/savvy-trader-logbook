@@ -40,19 +40,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const checkSession = async () => {
       try {
         // Get current session
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
+        const { data } = await supabase.auth.getSession();
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
 
         // Check if user is admin
-        if (currentSession?.user) {
-          const { data } = await supabase
+        if (data.session?.user) {
+          const { data: userData } = await supabase
             .from('users')
             .select('role')
-            .eq('id', currentSession.user.id)
+            .eq('id', data.session.user.id)
             .single();
           
-          setIsAdmin(data?.role === 'admin');
+          setIsAdmin(userData?.role === 'admin');
         }
       } catch (error) {
         console.error('Session check error:', error);

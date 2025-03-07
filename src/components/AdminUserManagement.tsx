@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
+import { supabase, createUser } from '@/lib/supabase';
 import { User } from '@/types';
 import { Pencil, Trash2, UserPlus } from 'lucide-react';
 
@@ -53,26 +53,13 @@ const AdminUserManagement: React.FC = () => {
         ? newUser.email 
         : `${newUser.email}@kingsbase.com`;
 
-      // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      // Create user with our helper function
+      await createUser(
+        newUser.username,
         email,
-        password: newUser.password,
-        email_confirm: true,
-      });
-
-      if (authError) throw authError;
-
-      // Create user profile
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert([{
-          id: authData.user.id,
-          username: newUser.username,
-          email,
-          role: newUser.role,
-        }]);
-
-      if (profileError) throw profileError;
+        newUser.password,
+        newUser.role
+      );
 
       toast.success('User created successfully');
       setShowAddModal(false);

@@ -33,11 +33,19 @@ export type Trade = {
 
 export type NewTrade = Omit<Trade, 'id' | 'created_at'>;
 
-// Trading pairs
+// Trading pairs with expanded options
 export const TradingPairs = {
-  futures: ['NQ', 'GC', 'CL', 'ES'],
-  forex: ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'USD/CHF', 'NZD/USD'],
-  crypto: ['BTC', 'ETH', 'AVAX', 'SOL', 'XRP', 'ADA', 'DOT']
+  futures: ['NQ', 'GC', 'CL', 'ES', 'RTY', 'YM', 'ZB', 'ZN', 'ZF', 'ZT', 'BTC', 'ETH'],
+  forex: [
+    'EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'USD/CHF', 'NZD/USD',
+    'EUR/GBP', 'EUR/JPY', 'GBP/JPY', 'AUD/JPY', 'EUR/AUD', 'EUR/CAD', 'EUR/CHF',
+    'GBP/CHF', 'AUD/CAD', 'AUD/CHF', 'AUD/NZD', 'CAD/JPY', 'CHF/JPY'
+  ],
+  crypto: [
+    'BTC', 'ETH', 'AVAX', 'SOL', 'XRP', 'ADA', 'DOT', 
+    'LINK', 'MATIC', 'DOGE', 'UNI', 'LTC', 'ATOM', 'SHIB',
+    'TRX', 'ETC', 'BCH', 'XLM', 'ALGO', 'NEAR', 'FTM'
+  ]
 };
 
 // Stats types

@@ -34,6 +34,12 @@ const mockUsers = [
   { id: '2', username: 'admin', email: 'admin@kingsbase.com', password: 'admin', role: 'admin' }
 ];
 
+// Mock data for users table
+let mockUsersTable = [
+  { id: '1', username: 'student', email: 'student@kingsbase.com', role: 'student', created_at: '2024-01-01T00:00:00.000Z' },
+  { id: '2', username: 'admin', email: 'admin@kingsbase.com', role: 'admin', created_at: '2024-01-01T00:00:00.000Z' }
+];
+
 // Mock supabase client for development
 export const supabase = {
   auth: {
@@ -83,32 +89,121 @@ export const supabase = {
     onAuthStateChange: (callback: any) => {
       // Simple mock for the subscription
       return { data: { subscription: { unsubscribe: () => {} } } };
+    },
+    // Add admin namespace for user management
+    admin: {
+      createUser: async ({ email, password, email_confirm = true }: any) => {
+        const newId = (mockUsers.length + 1).toString();
+        const newUser = {
+          id: newId,
+          email,
+          password,
+          username: email.split('@')[0],
+          user_metadata: { username: email.split('@')[0] }
+        };
+        
+        mockUsers.push({ 
+          id: newId, 
+          username: email.split('@')[0], 
+          email, 
+          password, 
+          role: 'student' 
+        });
+        
+        return { 
+          data: { user: newUser }, 
+          error: null 
+        };
+      },
+      deleteUser: async (userId: string) => {
+        const index = mockUsers.findIndex(u => u.id === userId);
+        if (index !== -1) {
+          mockUsers.splice(index, 1);
+          return { error: null };
+        }
+        return { error: { message: 'User not found' } };
+      }
     }
   },
   from: (table: string) => {
+    if (table === 'users') {
+      return {
+        select: (selection = '*') => {
+          return {
+            eq: (field: string, value: string) => {
+              return {
+                single: async () => {
+                  // For role checking in isUserAdmin
+                  const user = mockUsersTable.find(u => u[field as keyof typeof u] === value);
+                  return { data: user ? { role: user.role } : null, error: null };
+                }
+              };
+            },
+            order: (field: string, { ascending }: { ascending: boolean }) => {
+              // Sort the mock users
+              const sortedUsers = [...mockUsersTable].sort((a, b) => {
+                if (ascending) {
+                  return a[field as keyof typeof a] > b[field as keyof typeof b] ? 1 : -1;
+                } else {
+                  return a[field as keyof typeof a] < b[field as keyof typeof b] ? 1 : -1;
+                }
+              });
+              return { data: sortedUsers, error: null };
+            }
+          };
+        },
+        insert: (users: any[]) => {
+          // Add created_at field if not provided
+          const usersWithTimestamp = users.map(user => ({
+            ...user,
+            created_at: user.created_at || new Date().toISOString()
+          }));
+          
+          // Add the users to our mock table
+          mockUsersTable = [...mockUsersTable, ...usersWithTimestamp];
+          
+          return { 
+            data: usersWithTimestamp, 
+            error: null,
+            select: () => ({ data: usersWithTimestamp, error: null })
+          };
+        },
+        delete: () => {
+          return {
+            eq: (field: string, value: string) => {
+              const index = mockUsersTable.findIndex(u => u[field as keyof typeof u] === value);
+              if (index !== -1) {
+                mockUsersTable.splice(index, 1);
+                return { data: null, error: null };
+              }
+              return { data: null, error: { message: 'User not found' } };
+            }
+          };
+        }
+      };
+    }
     return {
       select: () => {
         return {
           eq: () => {
             return {
-              single: async () => {
-                if (table === 'users') {
-                  // For role checking in isUserAdmin
-                  const userId = arguments[1];
-                  const user = mockUsers.find(u => u.id === userId);
-                  return { data: user ? { role: user.role } : null, error: null };
-                }
-                return { data: null, error: null };
-              },
-              order: () => {
-                return { data: [], error: null };
-              }
+              single: async () => { return { data: null, error: null }; },
+              order: () => { return { data: [], error: null }; }
             };
           }
         };
       },
       insert: () => {
-        return { select: () => { return { data: [], error: null }; } };
+        return { 
+          select: () => { return { data: [], error: null }; },
+          data: null,
+          error: null
+        };
+      },
+      delete: () => {
+        return {
+          eq: () => { return { data: null, error: null }; }
+        };
       }
     };
   }
@@ -150,10 +245,28 @@ export const signOut = async () => {
 // User functions for admin
 export const createUser = async (username: string, email: string, password: string, role: 'admin' | 'student') => {
   try {
-    // In real implementation, this would create an auth user
-    // For the mock, just return success
+    // Create auth user
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password
+    });
+
+    if (authError) throw authError;
+
+    // Create user profile
+    const { error: profileError } = await supabase
+      .from('users')
+      .insert([{
+        id: authData.user.id,
+        username,
+        email,
+        role,
+      }]);
+
+    if (profileError) throw profileError;
+
     toast.success('User created successfully');
-    return { authData: {}, profileData: {} };
+    return { authData, profileData: {} };
   } catch (error) {
     console.error('Create user error:', error);
     throw error;
