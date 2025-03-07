@@ -25,6 +25,7 @@ const StatsCard: React.FC<StatsCardProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
+      whileHover={{ y: -5, boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)' }}
       className={cn(
         "glass-card rounded-xl p-6 flex flex-col",
         className
@@ -37,13 +38,32 @@ const StatsCard: React.FC<StatsCardProps> = ({
         </>
       ) : (
         <>
-          <h3 className="text-gray-400 text-sm font-medium mb-1">{title}</h3>
+          <motion.h3 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.3 }}
+            className="text-gray-400 text-sm font-medium mb-1"
+          >
+            {title}
+          </motion.h3>
           <div className="flex items-end justify-between">
-            <div className="text-2xl font-bold text-white">{value}</div>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+              className="text-2xl font-bold text-white"
+            >
+              {value}
+            </motion.div>
             {change && (
-              <div className={`text-sm font-medium ${positive ? 'text-green-500' : 'text-kings-red'}`}>
+              <motion.div 
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3, duration: 0.4 }}
+                className={`text-sm font-medium ${positive ? 'text-green-500' : 'text-kings-red'}`}
+              >
                 {change}
-              </div>
+              </motion.div>
             )}
           </div>
         </>

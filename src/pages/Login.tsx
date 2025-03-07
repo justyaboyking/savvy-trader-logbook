@@ -24,29 +24,49 @@ const Login = () => {
     }
   };
 
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-kings-black p-4">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
         className="max-w-md w-full mx-auto"
       >
-        <div className="text-center mb-10">
+        <motion.div 
+          className="text-center mb-10"
+          initial={{ scale: 0.9 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
           <h1 className="text-kings-red text-4xl font-bold tracking-tight mb-2">KINGS BASE</h1>
           <p className="text-gray-400">Trading Journal & Analytics</p>
-        </div>
+        </motion.div>
         
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
+          variants={container}
+          initial="hidden"
+          animate="show"
           className="glass-card rounded-xl p-8 shadow-2xl backdrop-blur-xl"
         >
-          <h2 className="text-2xl font-semibold text-white mb-6">Sign In</h2>
+          <motion.h2 variants={item} className="text-2xl font-semibold text-white mb-6">Sign In</motion.h2>
           
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
+            <motion.div variants={item}>
               <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
                 Username
               </label>
@@ -59,9 +79,9 @@ const Login = () => {
                 placeholder="Enter your username"
                 required
               />
-            </div>
+            </motion.div>
             
-            <div>
+            <motion.div variants={item}>
               <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
                 Password
               </label>
@@ -74,9 +94,9 @@ const Login = () => {
                 placeholder="Enter your password"
                 required
               />
-            </div>
+            </motion.div>
             
-            <div>
+            <motion.div variants={item} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <button
                 type="submit"
                 disabled={loading}
@@ -84,14 +104,17 @@ const Login = () => {
               >
                 {loading ? 'Signing in...' : 'Sign In'}
               </button>
-            </div>
+            </motion.div>
           </form>
           
-          <div className="mt-6 text-center">
+          <motion.div variants={item} className="mt-6 text-center">
             <p className="text-gray-400 text-sm">
               Custom account creation by admin only
             </p>
-          </div>
+            <div className="text-gray-500 text-xs mt-3">
+              Test accounts: student/student (Student) | admin/admin (Admin)
+            </div>
+          </motion.div>
         </motion.div>
       </motion.div>
     </div>
