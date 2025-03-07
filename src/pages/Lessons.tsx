@@ -25,10 +25,9 @@ const Lessons = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.6 }}
+          transition={{ delay: 0.4, duration: 0.6, type: "spring", stiffness: 300 }}
           className="glass-card rounded-xl p-8 text-center"
           whileHover={{ scale: 1.02 }}
-          transition={{ type: "spring", stiffness: 300 }}
         >
           <h2 className="text-2xl font-bold text-white mb-4">Coming Soon</h2>
           <p className="text-gray-400">
