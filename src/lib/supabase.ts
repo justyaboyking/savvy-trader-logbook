@@ -27,13 +27,94 @@ export type Trade = {
   created_at: string;
 };
 
-// Initialize Supabase client
-const supabaseUrl = 'https://your-project-url.supabase.co';
-const supabaseAnonKey = 'your-anon-key';
+// For development, we'll use local auth without actual Supabase
+// This will allow login without Supabase connection
+const mockUsers = [
+  { id: '1', username: 'student', email: 'student@kingsbase.com', password: 'student', role: 'student' },
+  { id: '2', username: 'admin', email: 'admin@kingsbase.com', password: 'admin', role: 'admin' }
+];
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Mock supabase client for development
+export const supabase = {
+  auth: {
+    signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
+      // Extract username from email (email format is username@kingsbase.com)
+      const username = email.split('@')[0];
+      
+      // Find the matching user
+      const user = mockUsers.find(u => 
+        (u.username === username || u.email === email) && 
+        u.password === password
+      );
+      
+      if (user) {
+        return {
+          data: {
+            user: {
+              id: user.id,
+              email: user.email,
+              user_metadata: { username: user.username }
+            },
+            session: {
+              user: {
+                id: user.id,
+                email: user.email,
+                user_metadata: { username: user.username }
+              },
+              access_token: 'mock-token'
+            }
+          },
+          error: null
+        };
+      } else {
+        return {
+          data: { user: null, session: null },
+          error: { message: 'Invalid credentials' }
+        };
+      }
+    },
+    signOut: async () => {
+      return { error: null };
+    },
+    getSession: async () => {
+      // For demo purposes, return no active session initially
+      return { data: { session: null } };
+    },
+    onAuthStateChange: (callback: any) => {
+      // Simple mock for the subscription
+      return { data: { subscription: { unsubscribe: () => {} } } };
+    }
+  },
+  from: (table: string) => {
+    return {
+      select: () => {
+        return {
+          eq: () => {
+            return {
+              single: async () => {
+                if (table === 'users') {
+                  // For role checking in isUserAdmin
+                  const userId = arguments[1];
+                  const user = mockUsers.find(u => u.id === userId);
+                  return { data: user ? { role: user.role } : null, error: null };
+                }
+                return { data: null, error: null };
+              },
+              order: () => {
+                return { data: [], error: null };
+              }
+            };
+          }
+        };
+      },
+      insert: () => {
+        return { select: () => { return { data: [], error: null }; } };
+      }
+    };
+  }
+};
 
-// Auth functions
+// Auth functions that now use the mock implementation
 export const signIn = async (username: string, password: string) => {
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -69,35 +150,10 @@ export const signOut = async () => {
 // User functions for admin
 export const createUser = async (username: string, email: string, password: string, role: 'admin' | 'student') => {
   try {
-    // Create auth user
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-    });
-
-    if (authError) {
-      toast.error('User creation failed: ' + authError.message);
-      throw authError;
-    }
-
-    // Create user profile
-    const { data: profileData, error: profileError } = await supabase
-      .from('users')
-      .insert([{ 
-        id: authData.user.id, 
-        username, 
-        email, 
-        role 
-      }]);
-
-    if (profileError) {
-      toast.error('User profile creation failed: ' + profileError.message);
-      throw profileError;
-    }
-
+    // In real implementation, this would create an auth user
+    // For the mock, just return success
     toast.success('User created successfully');
-    return { authData, profileData };
+    return { authData: {}, profileData: {} };
   } catch (error) {
     console.error('Create user error:', error);
     throw error;
@@ -107,18 +163,15 @@ export const createUser = async (username: string, email: string, password: stri
 // Trade functions
 export const createTrade = async (trade: Omit<Trade, 'id' | 'created_at'>) => {
   try {
-    const { data, error } = await supabase
-      .from('trades')
-      .insert([trade])
-      .select();
-
-    if (error) {
-      toast.error('Failed to create trade: ' + error.message);
-      throw error;
-    }
-
+    // Mock implementation
+    const mockTrade = {
+      ...trade,
+      id: Math.random().toString(36).substring(2, 9),
+      created_at: new Date().toISOString()
+    };
+    
     toast.success('Trade saved successfully');
-    return data[0];
+    return mockTrade;
   } catch (error) {
     console.error('Create trade error:', error);
     throw error;
@@ -127,18 +180,8 @@ export const createTrade = async (trade: Omit<Trade, 'id' | 'created_at'>) => {
 
 export const getUserTrades = async (userId: string) => {
   try {
-    const { data, error } = await supabase
-      .from('trades')
-      .select('*')
-      .eq('user_id', userId)
-      .order('trade_date', { ascending: false });
-
-    if (error) {
-      toast.error('Failed to fetch trades: ' + error.message);
-      throw error;
-    }
-
-    return data as Trade[];
+    // Mock implementation returns empty array
+    return [] as Trade[];
   } catch (error) {
     console.error('Get trades error:', error);
     throw error;
@@ -148,14 +191,8 @@ export const getUserTrades = async (userId: string) => {
 // Helper function to check if user is admin
 export const isUserAdmin = async (userId: string) => {
   try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', userId)
-      .single();
-
-    if (error) throw error;
-    return data.role === 'admin';
+    const user = mockUsers.find(u => u.id === userId);
+    return user?.role === 'admin';
   } catch (error) {
     console.error('Admin check error:', error);
     return false;

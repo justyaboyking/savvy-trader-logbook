@@ -1,12 +1,26 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Session, User } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+
+// Define our own Session and User types since we're using a mock
+type MockUser = {
+  id: string;
+  email: string;
+  user_metadata?: {
+    username?: string;
+  };
+};
+
+type MockSession = {
+  user: MockUser;
+  access_token: string;
+};
 
 type AuthContextType = {
-  session: Session | null;
-  user: User | null;
+  session: MockSession | null;
+  user: MockUser | null;
   loading: boolean;
   signIn: (username: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -16,8 +30,8 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<MockSession | null>(null);
+  const [user, setUser] = useState<MockUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
@@ -87,11 +101,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        toast.error('Login failed: ' + error.message);
+        throw error;
+      }
+
+      // Set the session and user state directly for the mock implementation
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
+      
+      // Check if user is admin
+      const mockRole = username === 'admin' ? 'admin' : 'student';
+      setIsAdmin(mockRole === 'admin');
       
       // Navigate to dashboard after login
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
       throw error;
     } finally {
@@ -104,6 +129,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      setSession(null);
+      setUser(null);
+      setIsAdmin(false);
       navigate('/');
     } catch (error) {
       console.error('Logout error:', error);

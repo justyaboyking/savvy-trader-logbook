@@ -54,7 +54,7 @@ const Login = () => {
           transition={{ duration: 0.5 }}
         >
           <h1 className="text-kings-red text-4xl font-bold tracking-tight mb-2 drop-shadow-lg">KINGS BASE</h1>
-          <p className="text-gray-300">Trading Journal & Analytics</p>
+          <p className="text-gray-100">Trading Journal & Analytics</p>
         </motion.div>
         
         <motion.div
@@ -67,7 +67,7 @@ const Login = () => {
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <motion.div variants={item}>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-200 mb-2">
                 Username
               </label>
               <input
@@ -75,14 +75,14 @@ const Login = () => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="premium-input w-full"
+                className="bg-kings-lightgray text-white premium-input w-full"
                 placeholder="Enter your username"
                 required
               />
             </motion.div>
             
             <motion.div variants={item}>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-200 mb-2">
                 Password
               </label>
               <input
@@ -90,7 +90,7 @@ const Login = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="premium-input w-full"
+                className="bg-kings-lightgray text-white premium-input w-full"
                 placeholder="Enter your password"
                 required
               />
@@ -108,10 +108,10 @@ const Login = () => {
           </form>
           
           <motion.div variants={item} className="mt-6 text-center">
-            <p className="text-gray-300 text-sm">
+            <p className="text-gray-200 text-sm">
               Custom account creation by admin only
             </p>
-            <div className="text-gray-400 text-xs mt-3">
+            <div className="text-gray-300 text-xs mt-3">
               Test accounts: student/student (Student) | admin/admin (Admin)
             </div>
           </motion.div>
