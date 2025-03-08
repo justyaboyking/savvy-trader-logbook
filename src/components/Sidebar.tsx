@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, BarChart2, FileInput, BookOpen, Settings, Users } from 'lucide-react';
+import { Home, BarChart2, FileInput, BookOpen, Settings, Users, Disc } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface SidebarProps {
@@ -28,7 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onCloseSidebar }) => {
     <aside className="h-full w-64 bg-kings-dark border-r border-kings-gray/30 flex flex-col">
       <div className="p-6">
         <div className="flex items-center justify-center mb-8">
-          <h1 className="text-kings-red text-2xl font-bold tracking-tighter">KINGS BASE</h1>
+          <h1 className="text-kings-red text-2xl font-bold tracking-tighter">KINGS DATA BASE</h1>
         </div>
 
         <nav className="space-y-1 mt-8">
@@ -77,12 +77,24 @@ const Sidebar: React.FC<SidebarProps> = ({ onCloseSidebar }) => {
               ))}
             </>
           )}
+
+          {/* Discord Link */}
+          <a 
+            href="https://discord.gg/mhGDfRgtpU" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center space-x-3 px-4 py-3 rounded-md transition-all duration-200 text-gray-300 hover:bg-kings-gray hover:text-white mt-4"
+            onClick={onCloseSidebar}
+          >
+            <Disc size={20} />
+            <span>Join Discord</span>
+          </a>
         </nav>
       </div>
 
       <div className="mt-auto p-6">
         <div className="flex items-center justify-center">
-          <div className="text-xs text-gray-500">© 2023 Kings Base</div>
+          <div className="text-xs text-gray-500">© 2025 Kings Data Base</div>
         </div>
       </div>
     </aside>
