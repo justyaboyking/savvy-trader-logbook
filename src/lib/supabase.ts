@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { toast } from "sonner";
 
@@ -90,7 +89,6 @@ export const supabase = {
       // Simple mock for the subscription
       return { data: { subscription: { unsubscribe: () => {} } } };
     },
-    // Add admin namespace for user management
     admin: {
       createUser: async ({ email, password, email_confirm = true }: any) => {
         const newId = (mockUsers.length + 1).toString();
@@ -126,20 +124,36 @@ export const supabase = {
     }
   },
   from: (table: string) => {
-    if (table === 'users') {
-      return {
-        select: (selection = '*') => {
-          return {
-            eq: (field: string, value: string) => {
-              return {
-                single: async () => {
-                  // For role checking in isUserAdmin
+    const mockQueryBuilder = {
+      select: (selection = '*') => {
+        return {
+          eq: (field: string, value: string) => {
+            return {
+              single: async () => {
+                if (table === 'users') {
                   const user = mockUsersTable.find(u => u[field as keyof typeof u] === value);
                   return { data: user ? { role: user.role } : null, error: null };
                 }
-              };
-            },
-            order: (field: string, { ascending }: { ascending: boolean }) => {
+                return { data: null, error: null };
+              },
+              order: (field: string, { ascending = true }: { ascending: boolean }) => {
+                if (table === 'users') {
+                  const filteredUsers = mockUsersTable.filter(u => u[field as keyof typeof u] === value);
+                  const sortedUsers = [...filteredUsers].sort((a, b) => {
+                    if (ascending) {
+                      return a[field as keyof typeof a] > b[field as keyof typeof b] ? 1 : -1;
+                    } else {
+                      return a[field as keyof typeof a] < b[field as keyof typeof b] ? 1 : -1;
+                    }
+                  });
+                  return { data: sortedUsers, error: null };
+                }
+                return { data: [], error: null };
+              }
+            };
+          },
+          order: (field: string, { ascending = true }: { ascending: boolean }) => {
+            if (table === 'users') {
               // Sort the mock users
               const sortedUsers = [...mockUsersTable].sort((a, b) => {
                 if (ascending) {
@@ -150,62 +164,50 @@ export const supabase = {
               });
               return { data: sortedUsers, error: null };
             }
-          };
-        },
-        insert: (users: any[]) => {
+            return { data: [], error: null };
+          }
+        };
+      },
+      insert: (items: any[]) => {
+        if (table === 'users') {
           // Add created_at field if not provided
-          const usersWithTimestamp = users.map(user => ({
-            ...user,
-            created_at: user.created_at || new Date().toISOString()
+          const itemsWithTimestamp = items.map(item => ({
+            ...item,
+            created_at: item.created_at || new Date().toISOString()
           }));
           
           // Add the users to our mock table
-          mockUsersTable = [...mockUsersTable, ...usersWithTimestamp];
+          mockUsersTable = [...mockUsersTable, ...itemsWithTimestamp];
           
           return { 
-            data: usersWithTimestamp, 
+            data: itemsWithTimestamp, 
             error: null,
-            select: () => ({ data: usersWithTimestamp, error: null })
+            select: () => ({ data: itemsWithTimestamp, error: null })
           };
-        },
-        delete: () => {
-          return {
-            eq: (field: string, value: string) => {
+        }
+        return { 
+          data: items, 
+          error: null,
+          select: () => ({ data: items, error: null })
+        };
+      },
+      delete: () => {
+        return {
+          eq: (field: string, value: string) => {
+            if (table === 'users') {
               const index = mockUsersTable.findIndex(u => u[field as keyof typeof u] === value);
               if (index !== -1) {
                 mockUsersTable.splice(index, 1);
                 return { data: null, error: null };
               }
-              return { data: null, error: { message: 'User not found' } };
             }
-          };
-        }
-      };
-    }
-    return {
-      select: () => {
-        return {
-          eq: () => {
-            return {
-              single: async () => { return { data: null, error: null }; },
-              order: () => { return { data: [], error: null }; }
-            };
+            return { data: null, error: { message: `Item not found in ${table}` } };
           }
-        };
-      },
-      insert: () => {
-        return { 
-          select: () => { return { data: [], error: null }; },
-          data: null,
-          error: null
-        };
-      },
-      delete: () => {
-        return {
-          eq: () => { return { data: null, error: null }; }
         };
       }
     };
+    
+    return mockQueryBuilder;
   }
 };
 
