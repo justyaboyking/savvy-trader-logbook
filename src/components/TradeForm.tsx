@@ -5,10 +5,12 @@ import RiskRewardCalculator from './RiskRewardCalculator';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { createTrade } from '@/lib/supabase';
+import { useNavigate } from 'react-router-dom';
 
 const TradeForm: React.FC = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
   
   const [tradeData, setTradeData] = useState<Partial<NewTrade>>({
     trade_date: new Date().toISOString().split('T')[0],
@@ -68,9 +70,9 @@ const TradeForm: React.FC = () => {
       const formattedTrade: NewTrade = {
         ...tradeData as NewTrade,
         user_id: user.id,
-        entry_price: parseFloat(tradeData.entry_price as any || 0),
-        stop_loss: parseFloat(tradeData.stop_loss as any || 0),
-        take_profit: parseFloat(tradeData.take_profit as any || 0),
+        entry_price: parseFloat(String(tradeData.entry_price || 0)),
+        stop_loss: parseFloat(String(tradeData.stop_loss || 0)),
+        take_profit: parseFloat(String(tradeData.take_profit || 0)),
         risk_reward: riskReward,
       };
       
@@ -87,6 +89,9 @@ const TradeForm: React.FC = () => {
       });
       
       toast.success('Trade saved successfully');
+      
+      // Navigate to stats page to see the new trade
+      navigate('/stats');
     } catch (error) {
       console.error('Error saving trade:', error);
       toast.error('Failed to save trade');

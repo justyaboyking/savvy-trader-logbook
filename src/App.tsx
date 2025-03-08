@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Stats from "./pages/Stats";
 import TradeEntry from "./pages/TradeEntry";
 import Lessons from "./pages/Lessons";
 import Admin from "./pages/Admin";
@@ -31,7 +32,7 @@ const App = () => (
               
               {/* Main app routes (protected) */}
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/stats" element={<Dashboard />} /> {/* Pointing to dashboard for now */}
+              <Route path="/stats" element={<Stats />} />
               <Route path="/trade-entry" element={<TradeEntry />} />
               <Route path="/lessons" element={<Lessons />} />
               
