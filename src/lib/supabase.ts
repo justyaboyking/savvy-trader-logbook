@@ -373,33 +373,39 @@ export const createUser = async (username: string, email: string, password: stri
 // Trade functions
 export const createTrade = async (trade: Omit<Trade, 'id' | 'created_at'>) => {
   try {
-    // Update mock implementation to actually save trades
-    const { data, error } = await supabase
-      .from('trades')
-      .insert([trade]);
+    // Create a new ID based on current timestamp
+    const newId = Date.now().toString();
+    const timestamp = new Date().toISOString();
     
-    if (error) throw error;
+    // Create the trade object with id and created_at
+    const newTrade: Trade = {
+      ...trade,
+      id: newId,
+      created_at: timestamp
+    };
     
+    // Add to mock trades table
+    mockTradesTable.push(newTrade);
+    
+    console.log("Trade created:", newTrade);
     toast.success('Trade saved successfully');
-    return data[0];
+    return newTrade;
   } catch (error) {
     console.error('Create trade error:', error);
+    toast.error('Failed to save trade');
     throw error;
   }
 };
 
 export const getUserTrades = async (userId: string) => {
   try {
-    // Update mock implementation to return mock trades
-    const { data, error } = await supabase
-      .from('trades')
-      .select('*')
-      .eq('user_id', userId)
-      .order('trade_date', { ascending: false });
+    // Filter trades by user_id and sort by trade_date (newest first)
+    const userTrades = mockTradesTable
+      .filter(trade => trade.user_id === userId)
+      .sort((a, b) => new Date(b.trade_date).getTime() - new Date(a.trade_date).getTime());
     
-    if (error) throw error;
-    
-    return data as Trade[];
+    console.log(`Retrieved ${userTrades.length} trades for user ${userId}`);
+    return userTrades;
   } catch (error) {
     console.error('Get trades error:', error);
     throw error;

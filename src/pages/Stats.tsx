@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import { withAuth } from '@/hooks/useAuth';
@@ -30,25 +29,26 @@ const Stats = () => {
   });
   const [symbolPerformance, setSymbolPerformance] = useState<SymbolPerformance[]>([]);
 
+  const fetchTrades = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      const tradesData = await getUserTrades(user.id);
+      console.log("Fetched trades:", tradesData); // Debug log
+      setTrades(tradesData);
+      
+      // Calculate statistics
+      calculateStats(tradesData);
+      calculateSymbolPerformance(tradesData);
+    } catch (error) {
+      console.error('Error fetching trades:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchTrades = async () => {
-      if (!user) return;
-
-      try {
-        setLoading(true);
-        const tradesData = await getUserTrades(user.id);
-        setTrades(tradesData);
-        
-        // Calculate statistics
-        calculateStats(tradesData);
-        calculateSymbolPerformance(tradesData);
-      } catch (error) {
-        console.error('Error fetching trades:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchTrades();
   }, [user]);
 
@@ -155,6 +155,12 @@ const Stats = () => {
             Advanced Trading Statistics
           </h1>
           <p className="text-gray-400 mt-1">Detailed analysis of your trading performance</p>
+          <button 
+            onClick={fetchTrades}
+            className="mt-3 bg-kings-red hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm"
+          >
+            Refresh Data
+          </button>
         </motion.div>
 
         {/* Stats Overview */}
