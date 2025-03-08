@@ -38,7 +38,7 @@ export const columns: ColumnDef<Trade>[] = [
     accessorKey: "entry_price",
     header: "Entry",
     cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("entry_price"));
+      const amount = parseFloat(String(row.getValue("entry_price")));
       const formatted = new Intl.NumberFormat("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 5,
@@ -51,7 +51,7 @@ export const columns: ColumnDef<Trade>[] = [
     accessorKey: "risk_reward",
     header: "R:R",
     cell: ({ row }) => {
-      const rr = row.getValue("risk_reward") as number;
+      const rr = parseFloat(String(row.getValue("risk_reward")));
       return <div className="text-right">1:{rr.toFixed(2)}</div>;
     },
   },

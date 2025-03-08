@@ -53,7 +53,7 @@ const Login = () => {
           animate={{ scale: 1 }}
           transition={{ duration: 0.5 }}
         >
-          <h1 className="text-kings-red text-4xl font-bold tracking-tight mb-2 drop-shadow-lg">KINGS BASE</h1>
+          <h1 className="text-kings-red text-4xl font-bold tracking-tight mb-2 drop-shadow-lg">KINGS DATA BASE</h1>
           <p className="text-gray-100">Trading Journal & Analytics</p>
         </motion.div>
         
@@ -111,9 +111,6 @@ const Login = () => {
             <p className="text-gray-200 text-sm">
               Custom account creation by admin only
             </p>
-            <div className="text-gray-300 text-xs mt-3">
-              Test accounts: student/student (Student) | admin/admin (Admin)
-            </div>
           </motion.div>
         </motion.div>
       </motion.div>
