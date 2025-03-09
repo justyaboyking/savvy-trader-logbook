@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, BarChart } from 'lucide-react';
+import { LayoutDashboard, Users, BarChart, School } from 'lucide-react';
 
 const AdminSidebar = () => {
   const location = useLocation();
@@ -23,8 +23,8 @@ const AdminSidebar = () => {
               : 'text-gray-300 hover:bg-kings-gray/20 hover:text-white'
           }`}
         >
-          <LayoutDashboard className="h-5 w-5 mr-3" />
-          Student Dashboard
+          <School className="h-5 w-5 mr-3" />
+          View Students
         </Link>
         
         <Link 
