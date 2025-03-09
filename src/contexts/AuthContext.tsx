@@ -4,11 +4,12 @@ import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { UserRole } from '@/types';
+import { Session, User } from '@supabase/supabase-js';
 
 // Define our own Session and User types since we're using a mock
 export type MockUser = {
   id: string;
-  email: string;
+  email?: string; // Make email optional to match Supabase User type
   role?: UserRole;
   user_metadata?: {
     username?: string;
@@ -38,13 +39,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
+  // Helper function to convert Supabase Session to MockSession
+  const convertSession = (supabaseSession: Session | null): MockSession | null => {
+    if (!supabaseSession) return null;
+    return {
+      user: {
+        id: supabaseSession.user.id,
+        email: supabaseSession.user.email || undefined,
+        role: undefined, // Will be set after checking the users table
+        user_metadata: supabaseSession.user.user_metadata as { username?: string }
+      },
+      access_token: supabaseSession.access_token
+    };
+  };
+
+  // Helper function to convert Supabase User to MockUser
+  const convertUser = (supabaseUser: User | null): MockUser | null => {
+    if (!supabaseUser) return null;
+    return {
+      id: supabaseUser.id,
+      email: supabaseUser.email || undefined,
+      role: undefined, // Will be set after checking the users table
+      user_metadata: supabaseUser.user_metadata as { username?: string }
+    };
+  };
+
   useEffect(() => {
     const checkSession = async () => {
       try {
         // Get current session from Supabase
         const { data } = await supabase.auth.getSession();
-        setSession(data.session);
-        setUser(data.session?.user ?? null);
+        const mockSession = convertSession(data.session);
+        const mockUser = convertUser(data.session?.user ?? null);
+        
+        setSession(mockSession);
+        setUser(mockUser);
 
         // Check if user is admin
         if (data.session?.user) {
@@ -55,6 +84,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             .single();
           
           setIsAdmin(userData?.role === 'admin');
+          
+          // Update user with role from database
+          if (mockUser && userData?.role) {
+            setUser(prevUser => ({
+              ...prevUser!,
+              role: userData.role as UserRole
+            }));
+          }
         }
       } catch (error) {
         console.error('Session check error:', error);
@@ -69,8 +106,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         console.log('Auth state changed:', event, newSession);
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
+        const mockSession = convertSession(newSession);
+        const mockUser = convertUser(newSession?.user ?? null);
+        
+        setSession(mockSession);
+        setUser(mockUser);
         setLoading(true);
 
         // Check if user is admin on auth change
@@ -82,6 +122,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             .single();
           
           setIsAdmin(data?.role === 'admin');
+          
+          // Update user with role from database
+          if (mockUser && data?.role) {
+            setUser(prevUser => ({
+              ...prevUser!,
+              role: data.role as UserRole
+            }));
+          }
         } else {
           setIsAdmin(false);
         }
@@ -109,9 +157,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
 
-      // Set the session and user state directly
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
+      // Convert Supabase session to MockSession
+      const mockSession = convertSession(data.session);
+      const mockUser = convertUser(data.session?.user ?? null);
+      
+      // Set the session and user state
+      setSession(mockSession);
+      setUser(mockUser);
       
       // Check if user is admin
       if (data.session) {
@@ -122,6 +174,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .single();
         
         setIsAdmin(userData?.role === 'admin');
+        
+        // Update user with role from database
+        if (mockUser && userData?.role) {
+          setUser(prevUser => ({
+            ...prevUser!,
+            role: userData.role as UserRole
+          }));
+        }
       }
       
       // Navigate to dashboard after login
