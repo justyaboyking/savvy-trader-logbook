@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // Get current session
+        // Get current session from Supabase
         const { data } = await supabase.auth.getSession();
         setSession(data.session);
         setUser(data.session?.user ?? null);
@@ -65,9 +65,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     checkSession();
 
-    // Listen for auth changes
+    // Listen for auth changes from Supabase
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
+        console.log('Auth state changed:', event, newSession);
         setSession(newSession);
         setUser(newSession?.user ?? null);
         setLoading(true);
@@ -97,7 +98,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signIn = async (username: string, password: string) => {
     setLoading(true);
     try {
-      // We format username to email for Supabase Auth
+      // Format username to email for Supabase Auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email: `${username}@kingsbase.com`,
         password,
@@ -108,13 +109,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
 
-      // Set the session and user state directly for the mock implementation
+      // Set the session and user state directly
       setSession(data.session);
       setUser(data.session?.user ?? null);
       
       // Check if user is admin
-      const mockRole = username === 'admin' ? 'admin' : 'student';
-      setIsAdmin(mockRole === 'admin');
+      if (data.session) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', data.session.user.id)
+          .single();
+        
+        setIsAdmin(userData?.role === 'admin');
+      }
       
       // Navigate to dashboard after login
       navigate('/dashboard');
@@ -130,11 +138,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      if (error) {
+        toast.error('Logout failed: ' + error.message);
+        throw error;
+      }
+      
+      // Clear local state
       setSession(null);
       setUser(null);
       setIsAdmin(false);
-      navigate('/');
+      
+      // Navigate to login page
+      navigate('/login');
+      toast.success('Successfully logged out');
     } catch (error) {
       console.error('Logout error:', error);
       throw error;

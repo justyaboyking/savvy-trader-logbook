@@ -1,15 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 import { toast } from "sonner";
-import { Trade, NewTrade } from '@/types';
+import { Trade, NewTrade, UserRole } from '@/types';
 
 // Types for our database
 export type User = {
   id: string;
   username: string;
   email: string;
-  role: 'admin' | 'student';
+  role: UserRole;
   created_at: string;
 };
+
+// Initialize Supabase client
+const supabaseUrl = 'https://tqkadidgpipbgjccxkbm.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxa2FkaWRncGlwYmdqY2N4a2JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTc2NTAyMDksImV4cCI6MjAzMzIyNjIwOX0.UB_8ScWIAIH9SFLS_ESuXUQhPTSskVsgJfYDW7vFGlw';
+export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // For development, we'll use local auth without actual Supabase
 // This will allow login without Supabase connection
@@ -88,224 +93,7 @@ let mockTradesTable: Trade[] = [
   }
 ];
 
-// Mock supabase client for development
-export const supabase = {
-  auth: {
-    signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
-      // Extract username from email (email format is username@kingsbase.com)
-      const username = email.split('@')[0];
-      
-      // Find the matching user
-      const user = mockUsers.find(u => 
-        (u.username === username || u.email === email) && 
-        u.password === password
-      );
-      
-      if (user) {
-        return {
-          data: {
-            user: {
-              id: user.id,
-              email: user.email,
-              user_metadata: { username: user.username }
-            },
-            session: {
-              user: {
-                id: user.id,
-                email: user.email,
-                user_metadata: { username: user.username }
-              },
-              access_token: 'mock-token'
-            }
-          },
-          error: null
-        };
-      } else {
-        return {
-          data: { user: null, session: null },
-          error: { message: 'Invalid credentials' }
-        };
-      }
-    },
-    signOut: async () => {
-      return { error: null };
-    },
-    getSession: async () => {
-      // For demo purposes, return no active session initially
-      return { data: { session: null } };
-    },
-    onAuthStateChange: (callback: any) => {
-      // Simple mock for the subscription
-      return { data: { subscription: { unsubscribe: () => {} } } };
-    },
-    admin: {
-      createUser: async ({ email, password, email_confirm = true }: any) => {
-        const newId = (mockUsers.length + 1).toString();
-        const newUser = {
-          id: newId,
-          email,
-          password,
-          username: email.split('@')[0],
-          user_metadata: { username: email.split('@')[0] }
-        };
-        
-        mockUsers.push({ 
-          id: newId, 
-          username: email.split('@')[0], 
-          email, 
-          password, 
-          role: 'student' 
-        });
-        
-        return { 
-          data: { user: newUser }, 
-          error: null 
-        };
-      },
-      deleteUser: async (userId: string) => {
-        const index = mockUsers.findIndex(u => u.id === userId);
-        if (index !== -1) {
-          mockUsers.splice(index, 1);
-          return { error: null };
-        }
-        return { error: { message: 'User not found' } };
-      }
-    }
-  },
-  from: (table: string) => {
-    const mockQueryBuilder = {
-      select: (selection = '*') => {
-        return {
-          eq: (field: string, value: string) => {
-            return {
-              single: async () => {
-                if (table === 'users') {
-                  const user = mockUsersTable.find(u => u[field as keyof typeof u] === value);
-                  return { data: user ? { role: user.role } : null, error: null };
-                }
-                return { data: null, error: null };
-              },
-              order: (field: string, { ascending = true }: { ascending: boolean }) => {
-                if (table === 'users') {
-                  const filteredUsers = mockUsersTable.filter(u => u[field as keyof typeof u] === value);
-                  const sortedUsers = [...filteredUsers].sort((a, b) => {
-                    if (ascending) {
-                      return a[field as keyof typeof a] > b[field as keyof typeof b] ? 1 : -1;
-                    } else {
-                      return a[field as keyof typeof a] < b[field as keyof typeof b] ? 1 : -1;
-                    }
-                  });
-                  return { data: sortedUsers, error: null };
-                } else if (table === 'trades') {
-                  const filteredTrades = mockTradesTable.filter(t => t[field as keyof typeof t] === value);
-                  const sortedTrades = [...filteredTrades].sort((a, b) => {
-                    const aField = a[field as keyof typeof a];
-                    const bField = b[field as keyof typeof b];
-                    if (ascending) {
-                      return aField > bField ? 1 : -1;
-                    } else {
-                      return aField < bField ? 1 : -1;
-                    }
-                  });
-                  return { data: sortedTrades, error: null };
-                }
-                return { data: [], error: null };
-              }
-            };
-          },
-          order: (field: string, { ascending = true }: { ascending: boolean }) => {
-            if (table === 'users') {
-              // Sort the mock users
-              const sortedUsers = [...mockUsersTable].sort((a, b) => {
-                if (ascending) {
-                  return a[field as keyof typeof a] > b[field as keyof typeof b] ? 1 : -1;
-                } else {
-                  return a[field as keyof typeof a] < b[field as keyof typeof b] ? 1 : -1;
-                }
-              });
-              return { data: sortedUsers, error: null };
-            } else if (table === 'trades') {
-              const sortedTrades = [...mockTradesTable].sort((a, b) => {
-                const aField = a[field as keyof typeof a];
-                const bField = b[field as keyof typeof b];
-                if (ascending) {
-                  return aField > bField ? 1 : -1;
-                } else {
-                  return aField < bField ? 1 : -1;
-                }
-              });
-              return { data: sortedTrades, error: null };
-            }
-            return { data: [], error: null };
-          }
-        };
-      },
-      insert: (items: any[]) => {
-        if (table === 'users') {
-          // Add created_at field if not provided
-          const itemsWithTimestamp = items.map(item => ({
-            ...item,
-            created_at: item.created_at || new Date().toISOString()
-          }));
-          
-          // Add the users to our mock table
-          mockUsersTable = [...mockUsersTable, ...itemsWithTimestamp];
-          
-          return { 
-            data: itemsWithTimestamp, 
-            error: null,
-            select: () => ({ data: itemsWithTimestamp, error: null })
-          };
-        } else if (table === 'trades') {
-          // Add created_at and id field if not provided
-          const tradesWithTimestamp = items.map((item, index) => ({
-            ...item,
-            id: item.id || (mockTradesTable.length + index + 1).toString(),
-            created_at: item.created_at || new Date().toISOString()
-          }));
-          
-          // Add the trades to our mock table
-          mockTradesTable = [...mockTradesTable, ...tradesWithTimestamp];
-          
-          return { 
-            data: tradesWithTimestamp, 
-            error: null,
-            select: () => ({ data: tradesWithTimestamp, error: null })
-          };
-        }
-        return { 
-          data: items, 
-          error: null,
-          select: () => ({ data: items, error: null })
-        };
-      },
-      delete: () => {
-        return {
-          eq: (field: string, value: string) => {
-            if (table === 'users') {
-              const index = mockUsersTable.findIndex(u => u[field as keyof typeof u] === value);
-              if (index !== -1) {
-                mockUsersTable.splice(index, 1);
-                return { data: null, error: null };
-              }
-            } else if (table === 'trades') {
-              const index = mockTradesTable.findIndex(t => t[field as keyof typeof t] === value);
-              if (index !== -1) {
-                mockTradesTable.splice(index, 1);
-                return { data: null, error: null };
-              }
-            }
-            return { data: null, error: { message: `Item not found in ${table}` } };
-          }
-        };
-      }
-    };
-    
-    return mockQueryBuilder;
-  }
-};
-
-// Auth functions that now use the mock implementation
+// Auth functions that now use Supabase directly
 export const signIn = async (username: string, password: string) => {
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -339,29 +127,58 @@ export const signOut = async () => {
 };
 
 // User functions for admin
-export const createUser = async (username: string, email: string, password: string, role: 'admin' | 'student') => {
+export const createUser = async (username: string, email: string, password: string, role: UserRole) => {
   try {
-    // Create auth user
+    console.log('Creating user with Supabase:', { username, email, role });
+    
+    // First create the auth user in Supabase
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
-      password
+      password,
+      email_confirm: true
     });
 
-    if (authError) throw authError;
+    if (authError) {
+      toast.error('Failed to create user: ' + authError.message);
+      throw authError;
+    }
 
-    // Create user profile
+    const userId = authData.user.id;
+
+    // Then create a row in our users table with additional info
     const { error: profileError } = await supabase
       .from('users')
       .insert([{
-        id: authData.user.id,
+        id: userId,
         username,
         email,
         role,
       }]);
 
-    if (profileError) throw profileError;
+    if (profileError) {
+      toast.error('Failed to create user profile: ' + profileError.message);
+      throw profileError;
+    }
 
     toast.success('User created successfully');
+    
+    // Add to mock users for development
+    mockUsers.push({ 
+      id: userId, 
+      username, 
+      email, 
+      password, 
+      role 
+    });
+    
+    mockUsersTable.push({
+      id: userId,
+      username,
+      email,
+      role,
+      created_at: new Date().toISOString()
+    });
+    
     return { authData, profileData: {} };
   } catch (error) {
     console.error('Create user error:', error);
@@ -369,26 +186,42 @@ export const createUser = async (username: string, email: string, password: stri
   }
 };
 
-// Trade functions
+// Trade functions connected to Supabase
 export const createTrade = async (trade: Omit<Trade, 'id' | 'created_at'>) => {
   try {
-    // Create a new ID based on current timestamp
-    const newId = Date.now().toString();
+    // Create the trade in Supabase
     const timestamp = new Date().toISOString();
     
-    // Create the trade object with id and created_at
-    const newTrade: Trade = {
-      ...trade,
-      id: newId,
-      created_at: timestamp
-    };
+    const { data, error } = await supabase
+      .from('trades')
+      .insert([{
+        ...trade,
+        created_at: timestamp
+      }])
+      .select()
+      .single();
+      
+    if (error) {
+      console.error('Supabase trade creation error:', error);
+      
+      // Fall back to mock for development if Supabase fails
+      const newId = Date.now().toString();
+      const newTrade: Trade = {
+        ...trade,
+        id: newId,
+        created_at: timestamp
+      };
+      
+      // Add to mock trades table
+      mockTradesTable.push(newTrade);
+      console.log("Mock trade created:", newTrade);
+      toast.success('Trade saved successfully (mock)');
+      return newTrade;
+    }
     
-    // Add to mock trades table
-    mockTradesTable.push(newTrade);
-    
-    console.log("Trade created:", newTrade);
+    console.log("Trade created in Supabase:", data);
     toast.success('Trade saved successfully');
-    return newTrade;
+    return data;
   } catch (error) {
     console.error('Create trade error:', error);
     toast.error('Failed to save trade');
@@ -398,13 +231,27 @@ export const createTrade = async (trade: Omit<Trade, 'id' | 'created_at'>) => {
 
 export const getUserTrades = async (userId: string) => {
   try {
-    // Filter trades by user_id and sort by trade_date (newest first)
-    const userTrades = mockTradesTable
-      .filter(trade => trade.user_id === userId)
-      .sort((a, b) => new Date(b.trade_date).getTime() - new Date(a.trade_date).getTime());
+    // Get trades from Supabase
+    const { data, error } = await supabase
+      .from('trades')
+      .select('*')
+      .eq('user_id', userId)
+      .order('trade_date', { ascending: false });
     
-    console.log(`Retrieved ${userTrades.length} trades for user ${userId}`);
-    return userTrades;
+    if (error) {
+      console.error('Supabase get trades error:', error);
+      
+      // Fall back to mock data for development
+      const userTrades = mockTradesTable
+        .filter(trade => trade.user_id === userId)
+        .sort((a, b) => new Date(b.trade_date).getTime() - new Date(a.trade_date).getTime());
+      
+      console.log(`Retrieved ${userTrades.length} trades for user ${userId} (mock)`);
+      return userTrades;
+    }
+    
+    console.log(`Retrieved ${data.length} trades for user ${userId} from Supabase`);
+    return data;
   } catch (error) {
     console.error('Get trades error:', error);
     throw error;
@@ -414,8 +261,21 @@ export const getUserTrades = async (userId: string) => {
 // Helper function to check if user is admin
 export const isUserAdmin = async (userId: string) => {
   try {
-    const user = mockUsers.find(u => u.id === userId);
-    return user?.role === 'admin';
+    const { data, error } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single();
+    
+    if (error) {
+      console.error('Supabase admin check error:', error);
+      
+      // Fall back to mock data for development
+      const user = mockUsers.find(u => u.id === userId);
+      return user?.role === 'admin';
+    }
+    
+    return data?.role === 'admin';
   } catch (error) {
     console.error('Admin check error:', error);
     return false;
@@ -425,8 +285,21 @@ export const isUserAdmin = async (userId: string) => {
 // Get a single trade by ID
 export const getTrade = async (id: string) => {
   try {
-    const trade = mockTradesTable.find(t => t.id === id);
-    return trade || null;
+    const { data, error } = await supabase
+      .from('trades')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('Supabase get trade error:', error);
+      
+      // Fall back to mock data for development
+      const trade = mockTradesTable.find(t => t.id === id);
+      return trade || null;
+    }
+    
+    return data;
   } catch (error) {
     console.error('Get trade error:', error);
     throw error;
@@ -436,22 +309,37 @@ export const getTrade = async (id: string) => {
 // Update a trade
 export const updateTrade = async (id: string, updates: Partial<Trade>) => {
   try {
-    // Find the trade index
-    const index = mockTradesTable.findIndex(t => t.id === id);
+    const { data, error } = await supabase
+      .from('trades')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
     
-    if (index === -1) {
-      throw new Error('Trade not found');
+    if (error) {
+      console.error('Supabase update trade error:', error);
+      
+      // Fall back to mock for development
+      const index = mockTradesTable.findIndex(t => t.id === id);
+      
+      if (index === -1) {
+        throw new Error('Trade not found');
+      }
+      
+      // Update the trade
+      mockTradesTable[index] = {
+        ...mockTradesTable[index],
+        ...updates
+      };
+      
+      console.log("Mock trade updated:", mockTradesTable[index]);
+      toast.success('Trade updated successfully (mock)');
+      return mockTradesTable[index];
     }
     
-    // Update the trade
-    mockTradesTable[index] = {
-      ...mockTradesTable[index],
-      ...updates
-    };
-    
-    console.log("Trade updated:", mockTradesTable[index]);
+    console.log("Trade updated in Supabase:", data);
     toast.success('Trade updated successfully');
-    return mockTradesTable[index];
+    return data;
   } catch (error) {
     console.error('Update trade error:', error);
     toast.error('Failed to update trade');
@@ -462,7 +350,17 @@ export const updateTrade = async (id: string, updates: Partial<Trade>) => {
 // Get all users (for admin)
 export const getAllUsers = async () => {
   try {
-    return mockUsersTable;
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Supabase get users error:', error);
+      return mockUsersTable;
+    }
+    
+    return data;
   } catch (error) {
     console.error('Get users error:', error);
     throw error;
@@ -472,7 +370,18 @@ export const getAllUsers = async () => {
 // Get a user by ID
 export const getUserById = async (id: string) => {
   try {
-    return mockUsersTable.find(u => u.id === id) || null;
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('Supabase get user error:', error);
+      return mockUsersTable.find(u => u.id === id) || null;
+    }
+    
+    return data;
   } catch (error) {
     console.error('Get user error:', error);
     throw error;
@@ -482,13 +391,26 @@ export const getUserById = async (id: string) => {
 // Get user trades for admin (bypass user_id check)
 export const getUserTradesAdmin = async (userId: string) => {
   try {
-    // Filter trades by user_id and sort by trade_date (newest first)
-    const userTrades = mockTradesTable
-      .filter(trade => trade.user_id === userId)
-      .sort((a, b) => new Date(b.trade_date).getTime() - new Date(a.trade_date).getTime());
+    const { data, error } = await supabase
+      .from('trades')
+      .select('*')
+      .eq('user_id', userId)
+      .order('trade_date', { ascending: false });
     
-    console.log(`Admin retrieved ${userTrades.length} trades for user ${userId}`);
-    return userTrades;
+    if (error) {
+      console.error('Supabase admin get trades error:', error);
+      
+      // Fall back to mock data for development
+      const userTrades = mockTradesTable
+        .filter(trade => trade.user_id === userId)
+        .sort((a, b) => new Date(b.trade_date).getTime() - new Date(a.trade_date).getTime());
+      
+      console.log(`Admin retrieved ${userTrades.length} trades for user ${userId} (mock)`);
+      return userTrades;
+    }
+    
+    console.log(`Admin retrieved ${data.length} trades for user ${userId} from Supabase`);
+    return data;
   } catch (error) {
     console.error('Admin get trades error:', error);
     throw error;
@@ -496,11 +418,29 @@ export const getUserTradesAdmin = async (userId: string) => {
 };
 
 // Create new user account with proper storage
-export const createUserAccount = async (username: string, email: string, password: string, role: 'admin' | 'student' = 'student') => {
+export const createUserAccount = async (username: string, email: string, password: string, role: UserRole = 'student') => {
   try {
+    console.log('Creating user account with Supabase:', { username, email, role });
+    
     // Check if username or email already exists
-    const existingUser = mockUsers.find(u => u.username === username || u.email === email);
-    if (existingUser) {
+    const { data: existingUsers, error: fetchError } = await supabase
+      .from('users')
+      .select('username, email')
+      .or(`username.eq.${username},email.eq.${email}`);
+    
+    if (fetchError) {
+      console.error('Error checking existing users:', fetchError);
+      // Fall back to mock check
+      const existingUser = mockUsers.find(u => u.username === username || u.email === email);
+      if (existingUser) {
+        if (existingUser.username === username) {
+          throw new Error('Username already taken');
+        } else {
+          throw new Error('Email already in use');
+        }
+      }
+    } else if (existingUsers && existingUsers.length > 0) {
+      const existingUser = existingUsers[0];
       if (existingUser.username === username) {
         throw new Error('Username already taken');
       } else {
@@ -508,38 +448,59 @@ export const createUserAccount = async (username: string, email: string, passwor
       }
     }
     
-    // Create new user ID
-    const newId = (mockUsers.length + 1).toString();
+    // Create auth user in Supabase
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true
+    });
     
-    // Create timestamp
-    const timestamp = new Date().toISOString();
+    if (authError) {
+      toast.error('Failed to create auth user: ' + authError.message);
+      throw authError;
+    }
     
-    // Add to mock users
-    const newUser = { 
-      id: newId, 
+    const userId = authData.user.id;
+    
+    // Create user profile in users table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .insert([{
+        id: userId,
+        username,
+        email,
+        role,
+        created_at: new Date().toISOString()
+      }])
+      .select()
+      .single();
+    
+    if (userError) {
+      toast.error('Failed to create user profile: ' + userError.message);
+      throw userError;
+    }
+    
+    // Also add to mock data for development fallback
+    mockUsers.push({ 
+      id: userId, 
       username, 
       email, 
       password, 
-      role
-    };
+      role 
+    });
     
-    mockUsers.push(newUser);
-    
-    // Add to mock users table
-    const newUserData = {
-      id: newId,
+    mockUsersTable.push({
+      id: userId,
       username,
       email,
       role,
-      created_at: timestamp
-    };
+      created_at: new Date().toISOString()
+    });
     
-    mockUsersTable.push(newUserData);
-    
-    console.log("Created new user:", newUserData);
+    console.log("Created new user in Supabase:", userData);
     toast.success('User account created successfully');
     
-    return newUserData;
+    return userData;
   } catch (error) {
     console.error('Create user account error:', error);
     toast.error('Failed to create user: ' + (error as Error).message);

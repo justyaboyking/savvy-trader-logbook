@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import AdminSidebar from './AdminSidebar';
@@ -21,7 +22,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const handleLogout = async () => {
     try {
       await signOut();
-      navigate('/');
+      // Navigation is handled in the signOut function
     } catch (error) {
       console.error('Logout failed:', error);
     }
