@@ -3,6 +3,9 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Trade } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Edit } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const columns: ColumnDef<Trade>[] = [
   {
@@ -71,5 +74,33 @@ export const columns: ColumnDef<Trade>[] = [
         </Badge>
       );
     },
+  },
+  {
+    id: "actions",
+    header: "Actions",
+    cell: ({ row }) => {
+      // Using an inline component with hooks
+      return <EditButton tradeId={row.original.id} />;
+    },
   }
 ];
+
+// Separate component to use hooks
+function EditButton({ tradeId }: { tradeId: string }) {
+  const navigate = useNavigate();
+  
+  const handleEdit = () => {
+    navigate(`/edit-trade/${tradeId}`);
+  };
+  
+  return (
+    <Button 
+      variant="ghost" 
+      size="icon" 
+      onClick={handleEdit}
+      className="h-8 w-8"
+    >
+      <Edit className="h-4 w-4" />
+    </Button>
+  );
+}

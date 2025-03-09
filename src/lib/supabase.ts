@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { toast } from "sonner";
 import { Trade, NewTrade } from '@/types';
@@ -420,5 +419,130 @@ export const isUserAdmin = async (userId: string) => {
   } catch (error) {
     console.error('Admin check error:', error);
     return false;
+  }
+};
+
+// Get a single trade by ID
+export const getTrade = async (id: string) => {
+  try {
+    const trade = mockTradesTable.find(t => t.id === id);
+    return trade || null;
+  } catch (error) {
+    console.error('Get trade error:', error);
+    throw error;
+  }
+};
+
+// Update a trade
+export const updateTrade = async (id: string, updates: Partial<Trade>) => {
+  try {
+    // Find the trade index
+    const index = mockTradesTable.findIndex(t => t.id === id);
+    
+    if (index === -1) {
+      throw new Error('Trade not found');
+    }
+    
+    // Update the trade
+    mockTradesTable[index] = {
+      ...mockTradesTable[index],
+      ...updates
+    };
+    
+    console.log("Trade updated:", mockTradesTable[index]);
+    toast.success('Trade updated successfully');
+    return mockTradesTable[index];
+  } catch (error) {
+    console.error('Update trade error:', error);
+    toast.error('Failed to update trade');
+    throw error;
+  }
+};
+
+// Get all users (for admin)
+export const getAllUsers = async () => {
+  try {
+    return mockUsersTable;
+  } catch (error) {
+    console.error('Get users error:', error);
+    throw error;
+  }
+};
+
+// Get a user by ID
+export const getUserById = async (id: string) => {
+  try {
+    return mockUsersTable.find(u => u.id === id) || null;
+  } catch (error) {
+    console.error('Get user error:', error);
+    throw error;
+  }
+};
+
+// Get user trades for admin (bypass user_id check)
+export const getUserTradesAdmin = async (userId: string) => {
+  try {
+    // Filter trades by user_id and sort by trade_date (newest first)
+    const userTrades = mockTradesTable
+      .filter(trade => trade.user_id === userId)
+      .sort((a, b) => new Date(b.trade_date).getTime() - new Date(a.trade_date).getTime());
+    
+    console.log(`Admin retrieved ${userTrades.length} trades for user ${userId}`);
+    return userTrades;
+  } catch (error) {
+    console.error('Admin get trades error:', error);
+    throw error;
+  }
+};
+
+// Create new user account with proper storage
+export const createUserAccount = async (username: string, email: string, password: string, role: 'admin' | 'student' = 'student') => {
+  try {
+    // Check if username or email already exists
+    const existingUser = mockUsers.find(u => u.username === username || u.email === email);
+    if (existingUser) {
+      if (existingUser.username === username) {
+        throw new Error('Username already taken');
+      } else {
+        throw new Error('Email already in use');
+      }
+    }
+    
+    // Create new user ID
+    const newId = (mockUsers.length + 1).toString();
+    
+    // Create timestamp
+    const timestamp = new Date().toISOString();
+    
+    // Add to mock users
+    const newUser = { 
+      id: newId, 
+      username, 
+      email, 
+      password, 
+      role
+    };
+    
+    mockUsers.push(newUser);
+    
+    // Add to mock users table
+    const newUserData = {
+      id: newId,
+      username,
+      email,
+      role,
+      created_at: timestamp
+    };
+    
+    mockUsersTable.push(newUserData);
+    
+    console.log("Created new user:", newUserData);
+    toast.success('User account created successfully');
+    
+    return newUserData;
+  } catch (error) {
+    console.error('Create user account error:', error);
+    toast.error('Failed to create user: ' + (error as Error).message);
+    throw error;
   }
 };

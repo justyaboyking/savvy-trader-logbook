@@ -1,6 +1,6 @@
-
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
+import AdminSidebar from './AdminSidebar';
 import { Menu, X } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -35,7 +35,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } md:relative md:translate-x-0 z-30 transition duration-300 ease-in-out`}
       >
-        <Sidebar onCloseSidebar={() => setSidebarOpen(false)} />
+        {user && user.role === 'admin' ? (
+          <AdminSidebar />
+        ) : (
+          <Sidebar onCloseSidebar={() => setSidebarOpen(false)} />
+        )}
       </div>
 
       {/* Main Content */}
