@@ -146,22 +146,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signIn = async (username: string, password: string) => {
     setLoading(true);
     try {
-      // Format username to email for Supabase Auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email: `${username}@kingsbase.com`,
         password,
       });
 
       if (error) {
-        toast.error('Login failed: ' + error.message);
-        throw error;
+        // Try mock authentication
+        const mockUsers = [
+          { id: '1', username: 'student', email: 'student@kingsbase.com', password: 'student', role: 'student' },
+          { id: '2', username: 'admin', email: 'admin@kingsbase.com', password: 'admin', role: 'admin' },
+          { id: '3', username: 'ghaith', email: 'ghaith@kingsbase.com', password: 'justustestingoutshitforfunyk', role: 'student' },
+          { id: '4', username: 'king', email: 'king@kingsbase.com', password: 'king', role: 'admin' }
+        ];
+        
+        const mockUser = mockUsers.find(
+          user => user.username === username && user.password === password
+        );
+        
+        if (!mockUser) {
+          toast.error('Login failed: Invalid username or password');
+          throw new Error('Invalid username or password');
+        }
+        
+        // Create mock session and user
+        const mockSession: MockSession = {
+          user: {
+            id: mockUser.id,
+            email: mockUser.email,
+            role: mockUser.role as UserRole,
+            user_metadata: {
+              username: mockUser.username
+            }
+          },
+          access_token: 'mock_token_' + Date.now()
+        };
+        
+        setSession(mockSession);
+        setUser(mockSession.user);
+        setIsAdmin(mockUser.role === 'admin');
+        
+        toast.success(`Logged in as ${mockUser.username} (mock)`);
+        navigate('/dashboard');
+        return;
       }
 
-      // Convert Supabase session to MockSession
+      // If Supabase login succeeds, use that session
       const mockSession = convertSession(data.session);
       const mockUser = convertUser(data.session?.user ?? null);
       
-      // Set the session and user state
       setSession(mockSession);
       setUser(mockUser);
       

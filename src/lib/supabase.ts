@@ -12,21 +12,25 @@ export type User = {
 };
 
 // Initialize Supabase client
-const supabaseUrl = 'https://tqkadidgpipbgjccxkbm.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxa2FkaWRncGlwYmdqY2N4a2JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTc2NTAyMDksImV4cCI6MjAzMzIyNjIwOX0.UB_8ScWIAIH9SFLS_ESuXUQhPTSskVsgJfYDW7vFGlw';
+const supabaseUrl = 'https://lhmupefawbimjqfuwjmw.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXVwZWZhd2JpbWpxZnV3am13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE0NDc4NTMsImV4cCI6MjA1NzAyMzg1M30.x7-GRGxUSI7I50IzAyF-EHZvPyHVoZqMWtjZlVx39Ns';
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // For development, we'll use local auth without actual Supabase
 // This will allow login without Supabase connection
 const mockUsers = [
   { id: '1', username: 'student', email: 'student@kingsbase.com', password: 'student', role: 'student' },
-  { id: '2', username: 'admin', email: 'admin@kingsbase.com', password: 'admin', role: 'admin' }
+  { id: '2', username: 'admin', email: 'admin@kingsbase.com', password: 'admin', role: 'admin' },
+  { id: '3', username: 'ghaith', email: 'ghaith@kingsbase.com', password: 'justustestingoutshitforfunyk', role: 'student' },
+  { id: '4', username: 'king', email: 'king@kingsbase.com', password: 'king', role: 'admin' }
 ];
 
 // Mock data for users table
 let mockUsersTable = [
   { id: '1', username: 'student', email: 'student@kingsbase.com', role: 'student', created_at: '2024-01-01T00:00:00.000Z' },
-  { id: '2', username: 'admin', email: 'admin@kingsbase.com', role: 'admin', created_at: '2024-01-01T00:00:00.000Z' }
+  { id: '2', username: 'admin', email: 'admin@kingsbase.com', role: 'admin', created_at: '2024-01-01T00:00:00.000Z' },
+  { id: '3', username: 'ghaith', email: 'ghaith@kingsbase.com', role: 'student', created_at: '2024-01-01T00:00:00.000Z' },
+  { id: '4', username: 'king', email: 'king@kingsbase.com', role: 'admin', created_at: '2024-01-01T00:00:00.000Z' }
 ];
 
 // Mock data for trades
@@ -96,14 +100,42 @@ let mockTradesTable: Trade[] = [
 // Auth functions that now use Supabase directly
 export const signIn = async (username: string, password: string) => {
   try {
+    // First try to sign in with Supabase
     const { data, error } = await supabase.auth.signInWithPassword({
       email: `${username}@kingsbase.com`, // Using email format for auth
       password,
     });
 
     if (error) {
-      toast.error('Login failed: ' + error.message);
-      throw error;
+      console.log('Supabase auth failed, falling back to mock auth');
+      
+      // Fall back to mock authentication for development
+      const mockUser = mockUsers.find(
+        user => user.username === username && user.password === password
+      );
+      
+      if (!mockUser) {
+        toast.error('Invalid username or password');
+        throw new Error('Invalid username or password');
+      }
+      
+      // Create a mock session
+      const mockSession = {
+        user: {
+          id: mockUser.id,
+          email: mockUser.email,
+          role: mockUser.role as UserRole,
+          user_metadata: {
+            username: mockUser.username
+          }
+        },
+        access_token: 'mock_token_' + Date.now()
+      };
+      
+      console.log('Mock authentication successful:', mockUser.username);
+      toast.success(`Logged in as ${mockUser.username} (mock)`);
+      
+      return { session: mockSession };
     }
 
     return data;

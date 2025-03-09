@@ -16,6 +16,7 @@ const Login = () => {
     
     try {
       await signIn(username, password);
+      // Success toast will be handled in the signIn function
     } catch (error: any) {
       console.error('Login error:', error);
       toast.error('Login failed: ' + (error.message || 'Please check your credentials'));
@@ -110,6 +111,14 @@ const Login = () => {
           <motion.div variants={item} className="mt-6 text-center">
             <p className="text-gray-200 text-sm">
               Custom account creation by admin only
+            </p>
+          </motion.div>
+
+          <motion.div variants={item} className="mt-4 text-center">
+            <p className="text-gray-200 text-xs">
+              Demo Accounts: <br />
+              Student: ghaith/justustestingoutshitforfunyk <br />
+              Admin: king/king
             </p>
           </motion.div>
         </motion.div>
