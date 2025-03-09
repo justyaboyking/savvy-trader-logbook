@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import { withAdmin } from '@/hooks/useAuth';
 import { getAllUsers, getUserTradesAdmin } from '@/lib/supabase';
-import { User, Trade } from '@/types';
+import { User, Trade, UserRole } from '@/types';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { ArrowRight, TrendingUp, TrendingDown, Percent, DollarSign } from 'lucide-react';
@@ -31,10 +31,15 @@ const AdminDashboard = () => {
         // Get all student users
         const allUsers = await getAllUsers();
         const students = allUsers.filter(user => user.role === 'student');
-        setUsers(students);
+        // Ensure the role is of type UserRole
+        const typedStudents: User[] = students.map(user => ({
+          ...user,
+          role: user.role as UserRole
+        }));
+        setUsers(typedStudents);
         
         // Get stats for each student
-        const statsPromises = students.map(async (user) => {
+        const statsPromises = typedStudents.map(async (user) => {
           const trades = await getUserTradesAdmin(user.id);
           return calculateUserStats(user, trades);
         });

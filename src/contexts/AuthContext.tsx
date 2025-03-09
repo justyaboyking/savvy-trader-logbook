@@ -3,11 +3,13 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { UserRole } from '@/types';
 
 // Define our own Session and User types since we're using a mock
 export type MockUser = {
   id: string;
   email: string;
+  role?: UserRole;
   user_metadata?: {
     username?: string;
   };

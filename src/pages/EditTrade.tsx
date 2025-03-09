@@ -5,7 +5,7 @@ import { withAuth } from '@/hooks/useAuth';
 import { useAuth } from '@/hooks/useAuth';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getTrade, updateTrade } from '@/lib/supabase';
-import { TradingPairs, Market, TradeType, Trade, NewTrade } from '@/types';
+import { TradingPairs, Market, TradeType, Trade } from '@/types';
 import RiskRewardCalculator from '@/components/RiskRewardCalculator';
 import { toast } from 'sonner';
 
@@ -34,7 +34,7 @@ const EditTrade = () => {
         }
         
         // Check if this trade belongs to the current user
-        if (trade.user_id !== user.id && !user.role === 'admin') {
+        if (trade.user_id !== user.id && user.role !== 'admin') {
           toast.error('You do not have permission to edit this trade');
           navigate('/stats');
           return;

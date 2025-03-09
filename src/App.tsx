@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +14,9 @@ import Lessons from "./pages/Lessons";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import { motion, AnimatePresence } from "framer-motion";
+import EditTrade from "./pages/EditTrade";
+import AdminDashboard from "./pages/AdminDashboard";
+import UserStats from "./pages/UserStats";
 
 const queryClient = new QueryClient();
 

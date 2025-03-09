@@ -4,7 +4,7 @@ import Layout from '@/components/Layout';
 import { withAdmin } from '@/hooks/useAuth';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getUserById, getUserTradesAdmin } from '@/lib/supabase';
-import { User, Trade } from '@/types';
+import { User, Trade, UserRole } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { DataTable } from '@/components/DataTable';
@@ -43,7 +43,13 @@ const UserStats = () => {
           return;
         }
         
-        setUser(userData);
+        // Ensure user role is of type UserRole
+        const typedUser: User = {
+          ...userData,
+          role: userData.role as UserRole
+        };
+        
+        setUser(typedUser);
         
         // Get user trades
         const tradesData = await getUserTradesAdmin(userId);
