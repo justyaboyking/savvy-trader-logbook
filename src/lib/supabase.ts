@@ -480,59 +480,74 @@ export const createUserAccount = async (username: string, email: string, passwor
       }
     }
     
-    // Create auth user in Supabase
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true
-    });
-    
-    if (authError) {
-      toast.error('Failed to create auth user: ' + authError.message);
-      throw authError;
-    }
-    
-    const userId = authData.user.id;
-    
-    // Create user profile in users table
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .insert([{
+    try {
+      // Try to create auth user in Supabase
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true
+      });
+      
+      if (authError) {
+        console.error('Failed to create auth user, falling back to mocks:', authError.message);
+        throw authError; // This will trigger the catch block below
+      }
+      
+      const userId = authData.user.id;
+      
+      // Create user profile in users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .insert([{
+          id: userId,
+          username,
+          email,
+          role,
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+      
+      if (userError) {
+        toast.error('Failed to create user profile: ' + userError.message);
+        throw userError;
+      }
+      
+      console.log("Created new user in Supabase:", userData);
+      toast.success('User account created successfully');
+      
+      return userData;
+    } catch (err) {
+      // Fall back to creating mock user if Supabase admin API fails
+      console.log('Supabase admin API unavailable, creating mock user instead');
+      
+      // Generate a unique ID for the mock user
+      const userId = 'mock_' + Date.now().toString();
+      
+      // Add to mock data
+      mockUsers.push({ 
+        id: userId, 
+        username, 
+        email, 
+        password, 
+        role 
+      });
+      
+      const mockUserData = {
         id: userId,
         username,
         email,
         role,
         created_at: new Date().toISOString()
-      }])
-      .select()
-      .single();
-    
-    if (userError) {
-      toast.error('Failed to create user profile: ' + userError.message);
-      throw userError;
+      };
+      
+      mockUsersTable.push(mockUserData);
+      
+      console.log("Created new mock user:", mockUserData);
+      toast.success('User account created successfully (mock)');
+      
+      return mockUserData;
     }
-    
-    // Also add to mock data for development fallback
-    mockUsers.push({ 
-      id: userId, 
-      username, 
-      email, 
-      password, 
-      role 
-    });
-    
-    mockUsersTable.push({
-      id: userId,
-      username,
-      email,
-      role,
-      created_at: new Date().toISOString()
-    });
-    
-    console.log("Created new user in Supabase:", userData);
-    toast.success('User account created successfully');
-    
-    return userData;
   } catch (error) {
     console.error('Create user account error:', error);
     toast.error('Failed to create user: ' + (error as Error).message);
