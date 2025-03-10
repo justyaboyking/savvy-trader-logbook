@@ -6,14 +6,14 @@ import { useAuth } from '@/contexts/AuthContext';
 // Protected route component
 export const withAuth = (Component: React.ComponentType) => {
   return () => {
-    const { session, loading } = useAuth();
+    const { user, loading } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
-      if (!loading && !session) {
-        navigate('/');
+      if (!loading && !user) {
+        navigate('/login');
       }
-    }, [loading, session, navigate]);
+    }, [loading, user, navigate]);
 
     if (loading) {
       return (
@@ -23,6 +23,6 @@ export const withAuth = (Component: React.ComponentType) => {
       );
     }
 
-    return session ? <Component /> : null;
+    return user ? <Component /> : null;
   };
 };

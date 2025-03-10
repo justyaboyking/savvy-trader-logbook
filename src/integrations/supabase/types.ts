@@ -76,7 +76,7 @@ export type Database = {
         Insert: {
           created_at?: string
           email: string
-          id: string
+          id?: string
           role: string
           username: string
         }
