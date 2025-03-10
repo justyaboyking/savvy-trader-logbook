@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { supabase, createUserAccount } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { User } from '@/types';
 import { Pencil, Trash2, UserPlus } from 'lucide-react';
 
@@ -50,13 +50,18 @@ const AdminUserManagement: React.FC = () => {
       // Email is generated from username
       const email = `${newUser.username}@kingsbase.com`;
 
-      // Use createUserAccount which includes fallback to mock users
-      await createUserAccount(
-        newUser.username,
+      // Create the user in Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email,
-        newUser.password,
-        newUser.role
-      );
+        password: newUser.password,
+        email_confirm: true,
+        user_metadata: {
+          username: newUser.username,
+          role: newUser.role
+        }
+      });
+
+      if (authError) throw authError;
 
       toast.success('User created successfully');
       setShowAddModal(false);
@@ -68,7 +73,13 @@ const AdminUserManagement: React.FC = () => {
       fetchUsers();
     } catch (error: any) {
       console.error('Error creating user:', error);
-      toast.error(`Failed to create user: ${error.message}`);
+      
+      // Special handling for the service_role issue
+      if (error.message?.includes('service_role')) {
+        toast.error('Admin API requires service role. Please use the Supabase dashboard to create users directly.');
+      } else {
+        toast.error(`Failed to create user: ${error.message}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -82,22 +93,15 @@ const AdminUserManagement: React.FC = () => {
     try {
       setLoading(true);
       
-      // Try to delete user from Supabase, but fallback to just mocks
-      try {
-        const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-        if (authError) throw authError;
-      } catch (err) {
-        console.log('Falling back to mock user deletion');
-        // We'll just delete from the local list since we can't access the admin API
+      // Delete user from auth
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      if (authError) {
+        console.error('Error deleting auth user:', authError);
+        toast.error(`Failed to delete user: ${authError.message}`);
+        return;
       }
       
-      // Delete user from users table
-      const { error: profileError } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', userId);
-        
-      if (profileError) throw profileError;
+      // The user record in 'users' table should be automatically deleted due to the ON DELETE CASCADE
       
       toast.success('User deleted successfully');
       fetchUsers();

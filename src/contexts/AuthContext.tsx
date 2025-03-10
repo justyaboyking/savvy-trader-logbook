@@ -4,26 +4,17 @@ import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { UserRole } from '@/types';
-import { Session, User } from '@supabase/supabase-js';
+import { User } from '@supabase/supabase-js';
 
-// Define our own Session and User types since we're using a mock
-export type MockUser = {
+type AuthUser = {
   id: string;
-  email?: string; // Make email optional to match Supabase User type
+  email: string;
+  username?: string;
   role?: UserRole;
-  user_metadata?: {
-    username?: string;
-  };
-};
-
-export type MockSession = {
-  user: MockUser;
-  access_token: string;
 };
 
 export type AuthContextType = {
-  session: MockSession | null;
-  user: MockUser | null;
+  user: AuthUser | null;
   loading: boolean;
   signIn: (username: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -33,192 +24,123 @@ export type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [session, setSession] = useState<MockSession | null>(null);
-  const [user, setUser] = useState<MockUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
-  // Helper function to convert Supabase Session to MockSession
-  const convertSession = (supabaseSession: Session | null): MockSession | null => {
-    if (!supabaseSession) return null;
-    return {
-      user: {
-        id: supabaseSession.user.id,
-        email: supabaseSession.user.email || undefined,
-        role: undefined, // Will be set after checking the users table
-        user_metadata: supabaseSession.user.user_metadata as { username?: string }
-      },
-      access_token: supabaseSession.access_token
-    };
+  // Function to fetch user profile data
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('role, username')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error in fetchUserProfile:', error);
+      return null;
+    }
   };
 
-  // Helper function to convert Supabase User to MockUser
-  const convertUser = (supabaseUser: User | null): MockUser | null => {
-    if (!supabaseUser) return null;
-    return {
-      id: supabaseUser.id,
-      email: supabaseUser.email || undefined,
-      role: undefined, // Will be set after checking the users table
-      user_metadata: supabaseUser.user_metadata as { username?: string }
-    };
-  };
-
+  // Set up auth state listener
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        // Get current session from Supabase
-        const { data } = await supabase.auth.getSession();
-        const mockSession = convertSession(data.session);
-        const mockUser = convertUser(data.session?.user ?? null);
+    const initializeAuth = async () => {
+      setLoading(true);
+      
+      // Check current session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        const profile = await fetchUserProfile(session.user.id);
         
-        setSession(mockSession);
-        setUser(mockUser);
-
-        // Check if user is admin
-        if (data.session?.user) {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', data.session.user.id)
-            .single();
+        const authUser: AuthUser = {
+          id: session.user.id,
+          email: session.user.email || '',
+          username: profile?.username || session.user.email?.split('@')[0] || '',
+          role: profile?.role as UserRole || 'student'
+        };
+        
+        setUser(authUser);
+        setIsAdmin(profile?.role === 'admin');
+      }
+      
+      setLoading(false);
+      
+      // Listen for auth changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, newSession) => {
+          console.log('Auth state changed:', event, newSession);
           
-          setIsAdmin(userData?.role === 'admin');
-          
-          // Update user with role from database
-          if (mockUser && userData?.role) {
-            setUser(prevUser => ({
-              ...prevUser!,
-              role: userData.role as UserRole
-            }));
+          if (event === 'SIGNED_IN' && newSession?.user) {
+            setLoading(true);
+            const profile = await fetchUserProfile(newSession.user.id);
+            
+            const authUser: AuthUser = {
+              id: newSession.user.id,
+              email: newSession.user.email || '',
+              username: profile?.username || newSession.user.email?.split('@')[0] || '',
+              role: profile?.role as UserRole || 'student'
+            };
+            
+            setUser(authUser);
+            setIsAdmin(profile?.role === 'admin');
+            setLoading(false);
+          } else if (event === 'SIGNED_OUT') {
+            setUser(null);
+            setIsAdmin(false);
           }
         }
-      } catch (error) {
-        console.error('Session check error:', error);
-      } finally {
-        setLoading(false);
-      }
+      );
+      
+      return () => {
+        subscription.unsubscribe();
+      };
     };
-
-    checkSession();
-
-    // Listen for auth changes from Supabase
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        console.log('Auth state changed:', event, newSession);
-        const mockSession = convertSession(newSession);
-        const mockUser = convertUser(newSession?.user ?? null);
-        
-        setSession(mockSession);
-        setUser(mockUser);
-        setLoading(true);
-
-        // Check if user is admin on auth change
-        if (newSession?.user) {
-          const { data } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', newSession.user.id)
-            .single();
-          
-          setIsAdmin(data?.role === 'admin');
-          
-          // Update user with role from database
-          if (mockUser && data?.role) {
-            setUser(prevUser => ({
-              ...prevUser!,
-              role: data.role as UserRole
-            }));
-          }
-        } else {
-          setIsAdmin(false);
-        }
-
-        setLoading(false);
-      }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    
+    initializeAuth();
   }, []);
 
+  // Sign in function
   const signIn = async (username: string, password: string) => {
     setLoading(true);
     try {
+      // Try email login directly if username contains @
+      const email = username.includes('@') ? username : `${username}@kingsbase.com`;
+      
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: `${username}@kingsbase.com`,
+        email,
         password,
       });
-
-      if (error) {
-        // Try mock authentication
-        const mockUsers = [
-          { id: '1', username: 'student', email: 'student@kingsbase.com', password: 'student', role: 'student' },
-          { id: '2', username: 'admin', email: 'admin@kingsbase.com', password: 'admin', role: 'admin' },
-          { id: '3', username: 'ghaith', email: 'ghaith@kingsbase.com', password: 'justustestingoutshitforfunyk', role: 'student' },
-          { id: '4', username: 'king', email: 'king@kingsbase.com', password: 'king', role: 'admin' }
-        ];
+      
+      if (error) throw error;
+      
+      // If login successful, get user profile
+      if (data.user) {
+        const profile = await fetchUserProfile(data.user.id);
         
-        const mockUser = mockUsers.find(
-          user => user.username === username && user.password === password
-        );
-        
-        if (!mockUser) {
-          toast.error('Login failed: Invalid username or password');
-          throw new Error('Invalid username or password');
-        }
-        
-        // Create mock session and user
-        const mockSession: MockSession = {
-          user: {
-            id: mockUser.id,
-            email: mockUser.email,
-            role: mockUser.role as UserRole,
-            user_metadata: {
-              username: mockUser.username
-            }
-          },
-          access_token: 'mock_token_' + Date.now()
+        // Update state with user info
+        const authUser: AuthUser = {
+          id: data.user.id,
+          email: data.user.email || '',
+          username: profile?.username || username,
+          role: profile?.role as UserRole || 'student'
         };
         
-        setSession(mockSession);
-        setUser(mockSession.user);
-        setIsAdmin(mockUser.role === 'admin');
+        setUser(authUser);
+        setIsAdmin(profile?.role === 'admin');
         
-        toast.success(`Logged in as ${mockUser.username} (mock)`);
+        // Navigate to appropriate dashboard
         navigate('/dashboard');
-        return;
+        toast.success(`Welcome back, ${profile?.username || username}!`);
       }
-
-      // If Supabase login succeeds, use that session
-      const mockSession = convertSession(data.session);
-      const mockUser = convertUser(data.session?.user ?? null);
-      
-      setSession(mockSession);
-      setUser(mockUser);
-      
-      // Check if user is admin
-      if (data.session) {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', data.session.user.id)
-          .single();
-        
-        setIsAdmin(userData?.role === 'admin');
-        
-        // Update user with role from database
-        if (mockUser && userData?.role) {
-          setUser(prevUser => ({
-            ...prevUser!,
-            role: userData.role as UserRole
-          }));
-        }
-      }
-      
-      // Navigate to dashboard after login
-      navigate('/dashboard');
     } catch (error: any) {
       console.error('Login error:', error);
       throw error;
@@ -227,33 +149,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Sign out function
   const signOut = async () => {
     setLoading(true);
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        toast.error('Logout failed: ' + error.message);
-        throw error;
-      }
+      if (error) throw error;
       
-      // Clear local state
-      setSession(null);
       setUser(null);
       setIsAdmin(false);
-      
-      // Navigate to login page
       navigate('/login');
       toast.success('Successfully logged out');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Logout error:', error);
-      throw error;
+      toast.error(`Logout failed: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
+  const value = {
+    user,
+    loading,
+    signIn,
+    signOut,
+    isAdmin,
+  };
+
   return (
-    <AuthContext.Provider value={{ session, user, loading, signIn, signOut, isAdmin }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
