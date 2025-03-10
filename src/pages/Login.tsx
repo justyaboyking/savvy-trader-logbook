@@ -12,8 +12,9 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!username || !password) {
@@ -24,11 +25,31 @@ const Login = () => {
     setIsSubmitting(true);
     
     try {
-      await signIn(username, password);
-      // Navigation is handled in the AuthContext after successful login
+      if (isSignUp) {
+        // Handle sign up
+        const email = `${username}@kingsbase.com`;
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              username,
+              role: 'student',
+            }
+          }
+        });
+        
+        if (error) throw error;
+        toast.success('Account created successfully! You can now log in.');
+        setIsSignUp(false);
+      } else {
+        // Handle login
+        await signIn(username, password);
+        // Navigation is handled in the AuthContext after successful login
+      }
     } catch (error: any) {
-      console.error('Login error:', error);
-      toast.error(`Login failed: ${error.message || 'Invalid login credentials'}`);
+      console.error('Authentication error:', error);
+      toast.error(`${isSignUp ? 'Signup' : 'Login'} failed: ${error.message || 'Invalid credentials'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -47,11 +68,15 @@ const Login = () => {
         >
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-white mb-2">KingsBase</h1>
-            <p className="text-gray-400">Log in to access your trading dashboard</p>
+            <p className="text-gray-400">
+              {isSignUp 
+                ? 'Create an account to start trading' 
+                : 'Log in to access your trading dashboard'}
+            </p>
           </div>
           
           <div className="glass-card rounded-xl p-8">
-            <form onSubmit={handleLogin} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
                   Username
@@ -89,8 +114,22 @@ const Login = () => {
                 className="premium-button w-full"
                 disabled={isSubmitting || loading}
               >
-                {isSubmitting || loading ? 'Logging in...' : 'Log In'}
+                {isSubmitting || loading 
+                  ? (isSignUp ? 'Creating Account...' : 'Logging in...') 
+                  : (isSignUp ? 'Create Account' : 'Log In')}
               </button>
+              
+              <div className="text-center mt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  {isSignUp 
+                    ? 'Already have an account? Log in' 
+                    : "Don't have an account? Sign up"}
+                </button>
+              </div>
             </form>
           </div>
         </motion.div>
