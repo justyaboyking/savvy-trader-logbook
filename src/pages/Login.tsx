@@ -13,6 +13,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,13 +22,17 @@ const Login = () => {
       toast.error('Please enter both username and password');
       return;
     }
+
+    if (isSignUp && !email) {
+      toast.error('Please enter your email address');
+      return;
+    }
     
     setIsSubmitting(true);
     
     try {
       if (isSignUp) {
-        // Handle sign up
-        const email = `${username}@kingsbase.com`;
+        // Handle sign up with actual email instead of generated one
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -40,11 +45,18 @@ const Login = () => {
         });
         
         if (error) throw error;
+        
         toast.success('Account created successfully! You can now log in.');
         setIsSignUp(false);
+        
+        // Clear form fields after successful signup
+        setUsername('');
+        setPassword('');
+        setEmail('');
       } else {
-        // Handle login
-        await signIn(username, password);
+        // Handle login - either with username@kingsbase.com or with actual email
+        const loginEmail = email || `${username}@kingsbase.com`;
+        await signIn(loginEmail, password);
         // Navigation is handled in the AuthContext after successful login
       }
     } catch (error: any) {
@@ -92,6 +104,24 @@ const Login = () => {
                   disabled={isSubmitting || loading}
                 />
               </div>
+              
+              {isSignUp && (
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="premium-input w-full"
+                    placeholder="Enter your email address"
+                    required
+                    disabled={isSubmitting || loading}
+                  />
+                </div>
+              )}
               
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">

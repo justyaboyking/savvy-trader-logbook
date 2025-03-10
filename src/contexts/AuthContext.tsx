@@ -16,7 +16,7 @@ type AuthUser = {
 export type AuthContextType = {
   user: AuthUser | null;
   loading: boolean;
-  signIn: (username: string, password: string) => Promise<void>;
+  signIn: (emailOrUsername: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
 };
@@ -109,11 +109,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // Sign in function
-  const signIn = async (username: string, password: string) => {
+  const signIn = async (emailOrUsername: string, password: string) => {
     setLoading(true);
     try {
-      // Try email login directly if username contains @
-      const email = username.includes('@') ? username : `${username}@kingsbase.com`;
+      // Determine if input is email or username
+      const email = emailOrUsername.includes('@') 
+        ? emailOrUsername 
+        : `${emailOrUsername}@kingsbase.com`;
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -130,7 +132,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const authUser: AuthUser = {
           id: data.user.id,
           email: data.user.email || '',
-          username: profile?.username || username,
+          username: profile?.username || emailOrUsername,
           role: profile?.role as UserRole || 'student'
         };
         
@@ -139,7 +141,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         // Navigate to appropriate dashboard
         navigate('/dashboard');
-        toast.success(`Welcome back, ${profile?.username || username}!`);
+        toast.success(`Welcome back, ${profile?.username || emailOrUsername}!`);
       }
     } catch (error: any) {
       console.error('Login error:', error);
