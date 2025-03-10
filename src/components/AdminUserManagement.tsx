@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { supabase, createUser, createUserAccount } from '@/lib/supabase';
+import { supabase, createUserAccount } from '@/lib/supabase';
 import { User } from '@/types';
 import { Pencil, Trash2, UserPlus } from 'lucide-react';
 
@@ -11,7 +11,6 @@ const AdminUserManagement: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newUser, setNewUser] = useState({
     username: '',
-    email: '',
     password: '',
     role: 'student' as 'admin' | 'student',
   });
@@ -48,10 +47,8 @@ const AdminUserManagement: React.FC = () => {
     try {
       setLoading(true);
 
-      // Format email if it doesn't contain @ (username to email)
-      const email = newUser.email.includes('@') 
-        ? newUser.email 
-        : `${newUser.email}@kingsbase.com`;
+      // Email is generated from username
+      const email = `${newUser.username}@kingsbase.com`;
 
       // Use createUserAccount which includes fallback to mock users
       await createUserAccount(
@@ -65,7 +62,6 @@ const AdminUserManagement: React.FC = () => {
       setShowAddModal(false);
       setNewUser({
         username: '',
-        email: '',
         password: '',
         role: 'student',
       });
@@ -210,24 +206,8 @@ const AdminUserManagement: React.FC = () => {
                   className="premium-input w-full"
                   required
                 />
-              </div>
-              
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                  Email
-                </label>
-                <input
-                  type="text"
-                  id="email"
-                  name="email"
-                  value={newUser.email}
-                  onChange={handleInputChange}
-                  className="premium-input w-full"
-                  placeholder="username or full email"
-                  required
-                />
                 <p className="text-xs text-gray-400 mt-1">
-                  Enter username only or full email address (username@kingsbase.com will be used if no @ is provided)
+                  Email will be automatically set to username@kingsbase.com
                 </p>
               </div>
               
